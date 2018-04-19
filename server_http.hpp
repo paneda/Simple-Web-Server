@@ -169,7 +169,7 @@ namespace SimpleWeb {
         
         std::function<void(std::shared_ptr<socket_type> socket, std::shared_ptr<typename ServerBase<socket_type>::Request>)> on_upgrade;
         
-        virtual void start() {
+        virtual unsigned short bindAndPrepare() {
             if(!io_service)
                 io_service=std::make_shared<boost::asio::io_service>();
 
@@ -189,8 +189,12 @@ namespace SimpleWeb {
             acceptor->bind(endpoint);
             acceptor->listen();
      
-            accept(); 
-            
+            accept();
+
+            return acceptor->local_endpoint().port();
+        }
+
+        virtual void runServer() {
             //If thread_pool_size>1, start m_io_service.run() in (thread_pool_size-1) threads for thread-pooling
             threads.clear();
             for(size_t c=1;c<config.thread_pool_size;c++) {
@@ -207,6 +211,11 @@ namespace SimpleWeb {
             for(auto& t: threads) {
                 t.join();
             }
+        }
+        
+        virtual void start() {
+            bindAndPrepare();
+            runServer();
         }
         
         void stop() {
